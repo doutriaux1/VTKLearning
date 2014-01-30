@@ -83,7 +83,7 @@ iren.SetInteractorStyle(style)
 # of the input to the widget.
 boxWidget = vtk.vtkBoxWidget()
 boxWidget.SetInteractor(iren)
-boxWidget.SetPlaceFactor(1.25)
+boxWidget.SetPlaceFactor(5.25)
 
 # Place the interactor initially. The input to a 3D widget is used to
 # initially position and scale the widget. The EndInteractionEvent is

@@ -42,8 +42,8 @@ inputData.SetPoints(inputPoints)
 
 # Use sphere as glyph source.
 balls = vtk.vtkSphereSource()
-balls.SetRadius(.01)
-balls.SetPhiResolution(10)
+balls.SetRadius(.1)
+balls.SetPhiResolution(30)
 balls.SetThetaResolution(10)
 
 glyphPoints = vtk.vtkGlyph3D()
@@ -61,7 +61,6 @@ glyph.GetProperty().SetSpecularPower(30)
 
 # Generate the polyline for the spline.
 points = vtk.vtkPoints()
-profileData = vtk.vtkPolyData()
 
 # Number of points on the spline
 numberOfOutputPoints = 400
@@ -75,19 +74,22 @@ for i in range(0, numberOfOutputPoints):
 
 
 # Create the polyline.
+# Because the points are not connected
+# line tells in which order to connect them
 lines = vtk.vtkCellArray()
 lines.InsertNextCell(numberOfOutputPoints)
 for i in range(0, numberOfOutputPoints):
     lines.InsertCellPoint(i)
 
+profileData = vtk.vtkPolyData()
 profileData.SetPoints(points)
 profileData.SetLines(lines)
 
 # Add thickness to the resulting line.
 profileTubes = vtk.vtkTubeFilter()
-profileTubes.SetNumberOfSides(8)
+profileTubes.SetNumberOfSides(3) # triangle kind of shape for the tube
 profileTubes.SetInputData(profileData)
-profileTubes.SetRadius(.005)
+profileTubes.SetRadius(.05)
 
 profileMapper = vtk.vtkPolyDataMapper()
 profileMapper.SetInputConnection(profileTubes.GetOutputPort())

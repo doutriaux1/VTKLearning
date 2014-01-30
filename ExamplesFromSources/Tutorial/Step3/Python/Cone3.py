@@ -53,7 +53,7 @@ ren1.SetViewport(0.0, 0.0, 0.5, 1.0)
 
 ren2 = vtk.vtkRenderer()
 ren2.AddActor(coneActor)
-ren2.SetBackground(0.1, 0.2, 0.4)
+ren2.SetBackground(0.5, 0.2, 0.4)
 ren2.SetViewport(0.5, 0.0, 1.0, 1.0)
 
 #
@@ -80,4 +80,4 @@ for i in range(0,360):
 
     renWin.Render()
     ren1.GetActiveCamera().Azimuth( 1 )
-    ren2.GetActiveCamera().Azimuth( 1 )
+    ren2.GetActiveCamera().Azimuth( -1 )

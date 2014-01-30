@@ -8,7 +8,7 @@ import vtk
 from vtk.util.misc import vtkGetDataRoot
 from vtk.util.colors import *
 # Get the location of the data.
-VTK_DATA_ROOT = vtkGetDataRoot()
+VTK_DATA_ROOT = "/git/VTKData/"
 
 # This creates a polygonal cylinder model with eight circumferential
 # facets.
@@ -25,7 +25,7 @@ partMapper.SetInputConnection(part.GetOutputPort())
 # in order to render faster. At the highest resolution, it renders
 # ewverything just like an actor. The middle level is a point cloud,
 # and the lowest level is a simple bounding box.
-partActor = vtk.vtkLODActor()
+partActor = vtk.vtkActor()
 partActor.SetMapper(partMapper)
 partActor.GetProperty().SetColor(light_grey)
 partActor.RotateX(30.0)

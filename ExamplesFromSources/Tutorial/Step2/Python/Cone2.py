@@ -19,6 +19,7 @@ import time
 # define the callback
 #
 def myCallback(obj,string):
+    print "We received:",string,'and',obj
     print "Starting a render"
 
 

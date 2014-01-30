@@ -39,7 +39,7 @@ iren.SetRenderWindow(renWin)
 
 # Add the actors to the renderer, set the background and size
 ren.AddActor(cylinderActor)
-ren.SetBackground(0.1, 0.2, 0.4)
+ren.SetBackground(1, 1, 1)
 renWin.SetSize(200, 200)
 
 # This allows the interactor to initalize itself. It has to be

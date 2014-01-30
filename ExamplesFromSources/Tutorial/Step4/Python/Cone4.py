@@ -59,8 +59,9 @@ property.SetSpecularPower(20)
 # geometry, which may save lots of memory if the geoemtry is large.
 coneActor2 = vtk.vtkActor()
 coneActor2.SetMapper(coneMapper)
-coneActor2.GetProperty().SetColor(0.2, 0.63, 0.79)
+#coneActor2.GetProperty().SetColor(0.2, 0.63, 0.79)
 coneActor2.SetProperty(property)
+coneActor2.GetProperty().SetColor(0.2, 0.63, 0.79)
 coneActor2.SetPosition(0, 2, 0)
 
 #

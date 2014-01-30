@@ -70,3 +70,4 @@ for i in range(0,360):
 
     renWin.Render()
     ren1.GetActiveCamera().Azimuth( 1 )
+
