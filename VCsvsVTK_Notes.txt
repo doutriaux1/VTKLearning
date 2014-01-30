@@ -1,0 +1,7 @@
+x=vcs.init()   <-->  renWin = vtk.vtkRenderWindow()
+
+slab  <--> vtkPolyData
+
+gm <--> vtkPolyDataMapper()
+
+templates  <-->  vtkRenderer() ???
