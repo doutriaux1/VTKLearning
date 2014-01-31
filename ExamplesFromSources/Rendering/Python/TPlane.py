@@ -4,7 +4,7 @@
 
 import vtk
 from vtk.util.misc import vtkGetDataRoot
-VTK_DATA_ROOT = vtkGetDataRoot()
+VTK_DATA_ROOT = "/git/VTKData"
 
 # Load in the texture map. A texture is any unsigned char image. If it
 # is not of this type, you will have to map it through a lookup table
@@ -17,6 +17,8 @@ atext.InterpolateOn()
 
 # Create a plane source and actor. The vtkPlanesSource generates
 # texture coordinates.
+#plane = vtk.vtkCylinderSource()
+## ??? How could I have different textures for different faces? (Top/Bottom vs sides)
 plane = vtk.vtkPlaneSource()
 planeMapper = vtk.vtkPolyDataMapper()
 planeMapper.SetInputConnection(plane.GetOutputPort())
