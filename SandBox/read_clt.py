@@ -1,3 +1,7 @@
+import readline
+import rlcompleter
+readline.parse_and_bind("tab: complete")
+
 import sys
 #sys.path.insert(0,"/git/HyperwallDataBrowse/HCI_Browser")
 #import NcImageDataReader as NcR
@@ -8,48 +12,76 @@ import numpy
 
 import cdms2
 
-f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
-s=f("clt",slice(0,1),slice(20,22),slice(20,22),squeeze=1)
-print s
+#f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
+#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
+f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
+s=f("sample")#[:-5,5:-5]
+print s.shape
 
 m=s.getGrid().getMesh()
-print m
+print m.shape
 
 m2 = numpy.ascontiguousarray(numpy.transpose(m,(0,2,1)))
-print m2
 m2.resize((m2.shape[0]*m2.shape[1],m2.shape[2]))
-
+m2=m2[...,::-1]
 print m2.shape
-print m2
 m3=numpy.concatenate((m2,numpy.zeros((m2.shape[0],1))),axis=1)
 ug = vtk.vtkUnstructuredGrid()
 pts = vtk.vtkPoints()
 ppV = VN.numpy_to_vtk(m3,deep=True)
-data = VN.numpy_to_vtk(s.filled(),deep=True)
+data = VN.numpy_to_vtk(s.filled().flat,deep=True)
 indices=numpy.arange(m2.shape[0],dtype=numpy.int64)
 pts.SetData(ppV)
 ug.SetPoints(pts)
-indices.resize((m2.shape[0]/4,4))
-print indices
-cellArray = VN.numpy_to_vtkIdTypeArray(indices,deep=True)
-#ug.SetCells(vtk.VTK_TETRA,cellArray)
-# Gives error:
-#Traceback (most recent call last):
-#    File "read_clt.py", line 35, in <module>
-#        ug.SetCells(vtk.VTK_TETRA,cellArray)
-#        TypeError: arguments do not match any overloaded methods
 
-for i in range(4):
+for i in range(m.shape[0]):
   lst = vtk.vtkIdList()
   for j in range(4):
     lst.InsertNextId(i*4+j)
 
-  #cellArray = VN.numpy_to_vtkIdTypeArray(numpy.array(index,dtype=numpy.int64))
-  ug.InsertNextCell(vtk.VTK_TETRA,lst)
-  # Gives error:
-  #Traceback (most recent call last):
-  #    File "read_clt.py", line 39, in <module>
-  #        ug.InsertNextCell(vtk.VTK_TETRA,cellArray)
-  #TypeError: InsertNextCell argument 2: method requires a vtkIdList, a vtkIdTypeArray was provided.
+  ug.InsertNextCell(vtk.VTK_QUAD,lst)
 
+ug.GetCellData().SetScalars(data)
+mapper = vtk.vtkDataSetMapper()
+mapper.SetInputData(ug)
+mapper.SetScalarRange(0,1600)
+act = vtk.vtkActor()
+act.VisibilityOn()
+act.SetMapper(mapper)
+
+mapper2 = vtk.vtkDataSetMapper()
+mapper2.SetInputData(ug)
+act2 = vtk.vtkActor()
+act2.SetMapper(mapper2)
+act2.GetProperty().SetRepresentationToWireframe()
+
+print ug.GetCellData().GetArray(0).GetRange()
+# Create the usual rendering stuff.
+ren = vtk.vtkRenderer()
+renWin = vtk.vtkRenderWindow()
+renWin.AddRenderer(ren)
+renWin.SetSize(300, 300)
+iren = vtk.vtkRenderWindowInteractor()
+iren.SetRenderWindow(renWin)
+
+ren.SetBackground(1, 1, 1) 
+
+ren.AddActor(act)
+ren.AddActor(act2)
+
+clr = vtk.vtkScalarBarActor()
+clr.SetLookupTable(mapper.GetLookupTable())
+clr.SetTitle(s.id)
+clr.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
+clr.GetPositionCoordinate().SetValue(.1,.01)
+clr.SetOrientationToHorizontal()
+clr.SetWidth(.8)
+clr.SetHeight(.1)
+
+ren.AddActor(clr)
+
+# Render the scene and start interaction.
+iren.Initialize()
+renWin.Render()
+iren.Start()
 
