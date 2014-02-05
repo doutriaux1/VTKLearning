@@ -58,7 +58,7 @@ boxWidget = vtk.vtkBoxWidget()
 boxWidget.SetInteractor(iren)
 boxWidget.SetPlaceFactor(1.25)
 
-ren.AddActor(maceActor)
+#ren.AddActor(maceActor)
 ren.AddActor(selectActor)
 
 # Add the actors to the renderer, set the background and size
