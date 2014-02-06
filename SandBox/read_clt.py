@@ -118,6 +118,8 @@ dsw.Write()
 c2p = vtk.vtkCellDataToPointData()
 c2p.SetInputData(ug)
 c2p.Update()
+
+
 ## ??? STILL NOT WORKING 
 if contour: 
   cot = vtk.vtkContourFilter()
