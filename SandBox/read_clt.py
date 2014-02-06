@@ -29,18 +29,31 @@ import cdms2
 f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
 s=f("sample")#[:-5,5:-5]
 
-#Get mesh information for vtk grid
-m=s.getGrid().getMesh()
-#For vtk we need to reorder things
-m2 = numpy.ascontiguousarray(numpy.transpose(m,(0,2,1)))
-m2.resize((m2.shape[0]*m2.shape[1],m2.shape[2]))
-m2=m2[...,::-1]
-# We need a "level" adding 0 everywhere
-# ??? TODO ??? Use actual levels if present (or time? or whatever 3rd dim?)
-m3=numpy.concatenate((m2,numpy.zeros((m2.shape[0],1))),axis=1)
-# Create the VTK grid
-# ??? TODO ??? Use StructuredGrid or RectlinearGrid when appropriate
-ug = vtk.vtkUnstructuredGrid()
+
+contour = False
+if contour:
+  lat = s.getGrid().getLatitude()
+  lon = s.getGrid().getLongitude()
+  if lat.rank()==1: # rectilinear
+    lat = lat[:,numpy.newaxis]*numpy.ones(lon.shape)[numpy.newaxis,:]
+    lon = lon[numpy.newaxis,:]*numpy.ones(lat.shape)[:,numpy.newaxis]
+  else:
+    lat=numpy.ascontiguousarray(lat)
+    lon=numpy.ascontiguousarray(lon)
+  lat.resize(lat.shape[0]*lat.shape[1],1)
+  lon.resize(lat.shape[0]*lat.shape[1],1)
+  l = numpy.zeros(lon.shape)
+  m3 = numpy.concatenate((lon,lat,l),axis=1)
+else:
+  #Get mesh information for vtk grid
+  m=s.getGrid().getMesh()
+  #For vtk we need to reorder things
+  m2 = numpy.ascontiguousarray(numpy.transpose(m,(0,2,1)))
+  m2.resize((m2.shape[0]*m2.shape[1],m2.shape[2]))
+  m2=m2[...,::-1]
+  # We need a "level" adding 0 everywhere
+  # ??? TODO ??? Use actual levels if present (or time? or whatever 3rd dim?)
+  m3=numpy.concatenate((m2,numpy.zeros((m2.shape[0],1))),axis=1)
 
 # First create the points/vertices (in vcs terms)
 deep = False
@@ -48,27 +61,55 @@ pts = vtk.vtkPoints()
 ## Conver tnupmy array to vtk ones
 ppV = VN.numpy_to_vtk(m3,deep=False)
 pts.SetData(ppV)
+print m3.shape
+print m3[567:569]
 
-## Sets the vertics into the grid
-ug.SetPoints(pts)
+# Create the VTK grid
+# ??? TODO ??? Use StructuredGrid or RectlinearGrid when appropriate
+if contour:
+  ug = vtk.vtkPolyData()
+else:
+  ug = vtk.vtkUnstructuredGrid()
 
-#Now construct the cells
-for i in range(m.shape[0]):
-  lst = vtk.vtkIdList()
-  for j in range(4):
-    lst.InsertNextId(i*4+j)
-  ## ??? TODO ??? when 3D use CUBE?
-  ug.InsertNextCell(vtk.VTK_QUAD,lst)
+## Ok here we try to apply the geotransform
+## And set points onto ug
+proj = True
+if proj:
+  geo = vtk.vtkGeoTransform()
+  ps = vtk.vtkGeoProjection()
+  pd = vtk.vtkGeoProjection()
+  pd.SetName('wintri')
+  pd.SetCentralMeridian(180)
+  geo.SetSourceProjection(ps)
+  geo.SetDestinationProjection(pd)
+  geopts = vtk.vtkPoints()
+  geo.TransformPoints(pts,geopts)
+  ## Sets the vertics into the grid
+  ug.SetPoints(geopts)
+else:
+  ## Sets the vertics into the grid
+  ug.SetPoints(pts)
+
 
 #Now applies the actual data on each cell
 data = VN.numpy_to_vtk(s.filled().flat,deep=True)
-ug.GetCellData().SetScalars(data)
+if contour:
+  ug.GetPointData().SetScalars(data)
+else:
+  #Now construct the cells
+  for i in range(m.shape[0]):
+    lst = vtk.vtkIdList()
+    for j in range(4):
+      lst.InsertNextId(i*4+j)
+    ## ??? TODO ??? when 3D use CUBE?
+    ug.InsertNextCell(vtk.VTK_QUAD,lst)
+
+  ug.GetCellData().SetScalars(data)
 
 
 # Her we try to do a little bit of contouring
 ## ??? STILL NOT WORKING 
-contour = False
-if contour:
+if contour: 
   cot = vtk.vtkContourFilter()
   cot.SetInputData(ug)
   cot.GenerateValues(10,0.,1600.)
@@ -80,6 +121,7 @@ mapper = vtk.vtkDataSetMapper()
 if contour:
   mapper.SetInputConnection(cot.GetOutputPort())
 else:
+  print "ok we do come here"
   mapper.SetInputData(ug)
 # Color range
 mapper.SetScalarRange(0,1600)
@@ -89,7 +131,7 @@ mapper.SetScalarRange(0,1600)
 act = vtk.vtkActor()
 act.SetMapper(mapper)
 
-wrap = True
+wrap = False
 def doWrap(Mapper,Act):
   act_left = vtk.vtkActor()
   act_left.SetMapper(Mapper)
@@ -140,6 +182,24 @@ clr.SetOrientationToHorizontal()
 clr.SetWidth(.8)
 clr.SetHeight(.1)
 ren.AddActor(clr)
+
+## Trying the glyph thing to see the points
+glyph = True
+if glyph:
+  S=vtk.vtkSphereSource()
+  if proj:
+    sc = max(geopts.GetBounds())/90.
+    S.SetRadius(sc)
+  else:
+    S.SetRadius(1)
+  g = vtk.vtkGlyph3D()
+  g.SetInputData(ug)
+  g.SetSourceConnection(S.GetOutputPort())
+  gmap = vtk.vtkPolyDataMapper()
+  gmap.SetInputConnection(g.GetOutputPort())
+  gact = vtk.vtkActor()
+  gact.SetMapper(gmap)
+  ren.AddActor(gact)
 
 # Render the scene and start interaction.
 iren.Initialize()
