@@ -95,6 +95,7 @@ else:
 data = VN.numpy_to_vtk(s.filled().flat,deep=True)
 if contour:
   ug.GetPointData().SetScalars(data)
+  #polydata need cells too, even if they are all VTK_VERTEX (1 cell : 1 vertex) you need them to do much with it
 else:
   #Now construct the cells
   for i in range(m.shape[0]):
@@ -106,6 +107,11 @@ else:
 
   ug.GetCellData().SetScalars(data)
 
+dsw = vtk.vtkDataSetWriter()
+dsw.SetFileName("foo.vtk")
+dsw.SetInputData(ug)
+dsw.Write()
+#send me this, and open it up and and inspect in paraview
 
 # Her we try to do a little bit of contouring
 ## ??? STILL NOT WORKING 
@@ -113,6 +119,7 @@ if contour:
   cot = vtk.vtkContourFilter()
   cot.SetInputData(ug)
   cot.GenerateValues(10,0.,1600.)
+  # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
   cot.SetComputeScalars(1)
   cot.ComputeScalarsOn()
 
