@@ -113,15 +113,22 @@ dsw.SetInputData(ug)
 dsw.Write()
 #send me this, and open it up and and inspect in paraview
 
-# Her we try to do a little bit of contouring
+# Here we try to do a little bit of contouring
+#not without values on the points you don't!
+c2p = vtk.vtkCellDataToPointData()
+c2p.SetInputData(ug)
+c2p.Update()
 ## ??? STILL NOT WORKING 
 if contour: 
   cot = vtk.vtkContourFilter()
-  cot.SetInputData(ug)
+  #c2p.Update()
+  #cot.SetInputData(c2p.GetOutput())
+  #or better still
+  cot.SetInputConnection(c2p.GetOutputPort())
   cot.GenerateValues(10,0.,1600.)
   # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
   cot.SetComputeScalars(1)
-  cot.ComputeScalarsOn()
+  #cot.ComputeScalarsOn()
 
 #Ok now we have grid and data let's use the mapper
 mapper = vtk.vtkDataSetMapper()
