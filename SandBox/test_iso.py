@@ -77,12 +77,15 @@ c2p = vtk.vtkCellDataToPointData()
 c2p.SetInputData(ug)
 c2p.Update()
 
+#For contouring duplicate points seem to confuse it
+cln = vtk.vtkCleanUnstructuredGrid()
+cln.SetInputConnection(c2p.GetOutputPort())
 
 cot = vtk.vtkContourFilter()
 #c2p.Update()
 #cot.SetInputData(c2p.GetOutput())
 #or better still
-cot.SetInputConnection(c2p.GetOutputPort())
+cot.SetInputConnection(cln.GetOutputPort())
 cot.GenerateValues(10,0.,1600.)
 # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
 cot.SetComputeScalars(1)
