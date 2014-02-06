@@ -30,8 +30,8 @@ f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
 s=f("sample")#[:-5,5:-5]
 
 
-contour = False
-if contour:
+contour = True
+if not contour:
   lat = s.getGrid().getLatitude()
   lon = s.getGrid().getLongitude()
   if lat.rank()==1: # rectilinear
@@ -66,7 +66,7 @@ print m3[567:569]
 
 # Create the VTK grid
 # ??? TODO ??? Use StructuredGrid or RectlinearGrid when appropriate
-if contour:
+if not contour:
   ug = vtk.vtkPolyData()
 else:
   ug = vtk.vtkUnstructuredGrid()
@@ -93,7 +93,7 @@ else:
 
 #Now applies the actual data on each cell
 data = VN.numpy_to_vtk(s.filled().flat,deep=True)
-if contour:
+if not contour:
   ug.GetPointData().SetScalars(data)
   #polydata need cells too, even if they are all VTK_VERTEX (1 cell : 1 vertex) you need them to do much with it
 else:
@@ -172,7 +172,7 @@ else:
   ren.AddActor(act)
 
 #This bits show the mesh, needs a second mapper
-mesh = True
+mesh = False
 if mesh:
   mapper2 = vtk.vtkDataSetMapper()
   mapper2.SetInputData(ug)
