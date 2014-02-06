@@ -67,14 +67,20 @@ ug.GetCellData().SetScalars(data)
 
 # Her we try to do a little bit of contouring
 ## ??? STILL NOT WORKING 
-##  cot = vtk.vtkContourFilter()
-##  cot.SetInputData(ug)
-##  cot.GenerateValues(10,0.,1600.)
-
+contour = False
+if contour:
+  cot = vtk.vtkContourFilter()
+  cot.SetInputData(ug)
+  cot.GenerateValues(10,0.,1600.)
+  cot.SetComputeScalars(1)
+  cot.ComputeScalarsOn()
 
 #Ok now we have grid and data let's use the mapper
 mapper = vtk.vtkDataSetMapper()
-mapper.SetInputData(ug)
+if contour:
+  mapper.SetInputConnection(cot.GetOutputPort())
+else:
+  mapper.SetInputData(ug)
 # Color range
 mapper.SetScalarRange(0,1600)
 
@@ -82,16 +88,46 @@ mapper.SetScalarRange(0,1600)
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
 act.SetMapper(mapper)
-ren.AddActor(act)
+
+wrap = True
+def doWrap(Mapper,Act):
+  act_left = vtk.vtkActor()
+  act_left.SetMapper(Mapper)
+  act_left.SetProperty(Act.GetProperty())
+  T = vtk.vtkTransform()
+  T.Translate(-360,0,0)
+  act_left.SetUserTransform(T)
+  act_right = vtk.vtkActor()
+  act_right.SetMapper(Mapper)
+  T = vtk.vtkTransform()
+  T.Translate(360,0,0)
+  act_right.SetUserTransform(T)
+  act_right.SetProperty(Act.GetProperty())
+  A = vtk.vtkAssembly()
+  A.AddPart(act_left)
+  A.AddPart(Act)
+  A.AddPart(act_right)
+  return A
+
+if wrap:
+  A = doWrap(mapper,act)
+  ren.AddActor(A)
+else:
+  ren.AddActor(act)
 
 #This bits show the mesh, needs a second mapper
+mesh = True
 if mesh:
   mapper2 = vtk.vtkDataSetMapper()
   mapper2.SetInputData(ug)
   act2 = vtk.vtkActor()
   act2.SetMapper(mapper2)
   act2.GetProperty().SetRepresentationToWireframe()
-  ren.AddActor(act2)
+  if wrap:
+    A2 = doWrap(mapper2,act2)
+    ren.AddActor(A2)
+  else:
+    ren.AddActor(act2)
 
 #Now let's have colorbar
 ## ??? different renderer for this one? so it doesn't zoo in/out
@@ -112,6 +148,7 @@ iren.Start()
 
 
 # The following saves plo to disk
+dump = False
 if dump:
   # Dump to ps/pdf/svg
   gl  = vtk.vtkGL2PSExporter()
