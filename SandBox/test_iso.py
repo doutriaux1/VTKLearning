@@ -24,8 +24,8 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-f=cdms2.open(sys.prefix+"clt.nc")
-s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
+#f=cdms2.open("clt.nc")
+#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
 f=cdms2.open("sampleCurveGrid4.nc")
 s=f("sample")#[:-5,5:-5]
 
