@@ -24,10 +24,10 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
-s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
-#f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
-#s=f("sample")#[:-5,5:-5]
+#f=cdms2.open("clt.nc")
+#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
+f=cdms2.open("sampleCurveGrid4.nc")
+s=f("sample")#[:-5,5:-5]
 
 
 #Get mesh information for vtk grid
@@ -36,6 +36,7 @@ m=s.getGrid().getMesh()
 m2 = numpy.ascontiguousarray(numpy.transpose(m,(0,2,1)))
 m2.resize((m2.shape[0]*m2.shape[1],m2.shape[2]))
 m2=m2[...,::-1]
+m2b = m2[...,0]+360.
 # We need a "level" adding 0 everywhere
 # ??? TODO ??? Use actual levels if present (or time? or whatever 3rd dim?)
 m3=numpy.concatenate((m2,numpy.zeros((m2.shape[0],1))),axis=1)
@@ -77,6 +78,9 @@ c2p = vtk.vtkCellDataToPointData()
 c2p.SetInputData(ug)
 c2p.Update()
 
+#For contouring duplicate points seem to confuse it
+cln = vtk.vtkCleanUnstructuredGrid()
+cln.SetInputConnection(c2p.GetOutputPort())
 
 dsw = vtk.vtkDataSetWriter()
 dsw.SetFileName("foo2.vtk")
@@ -86,8 +90,9 @@ cot = vtk.vtkContourFilter()
 #c2p.Update()
 #cot.SetInputData(c2p.GetOutput())
 #or better still
-cot.SetInputConnection(c2p.GetOutputPort())
-cot.GenerateValues(10,0.,1600.)
+cot.SetInputConnection(cln.GetOutputPort())
+mn,mx = s.min(),s.max()
+cot.GenerateValues(10,mn,mx)
 # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
 cot.SetComputeScalars(1)
 #cot.ComputeScalarsOn()
@@ -96,7 +101,7 @@ cot.SetComputeScalars(1)
 mapper = vtk.vtkDataSetMapper()
 mapper.SetInputConnection(cot.GetOutputPort())
 # Color range
-mapper.SetScalarRange(0,1600)
+mapper.SetScalarRange(mn,mx)
 
 
 # And now we need actors to actually render this thing
