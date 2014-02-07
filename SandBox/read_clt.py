@@ -30,8 +30,8 @@ f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
 s=f("sample")#[:-5,5:-5]
 
 
-contour = True
-if not contour:
+contour = False
+if contour:
   lat = s.getGrid().getLatitude()
   lon = s.getGrid().getLongitude()
   if lat.rank()==1: # rectilinear
@@ -61,19 +61,17 @@ pts = vtk.vtkPoints()
 ## Conver tnupmy array to vtk ones
 ppV = VN.numpy_to_vtk(m3,deep=False)
 pts.SetData(ppV)
-print m3.shape
-print m3[567:569]
 
 # Create the VTK grid
 # ??? TODO ??? Use StructuredGrid or RectlinearGrid when appropriate
-if not contour:
+if contour:
   ug = vtk.vtkPolyData()
 else:
   ug = vtk.vtkUnstructuredGrid()
 
 ## Ok here we try to apply the geotransform
 ## And set points onto ug
-proj = True
+proj = False
 if proj:
   geo = vtk.vtkGeoTransform()
   ps = vtk.vtkGeoProjection()
@@ -93,7 +91,7 @@ else:
 
 #Now applies the actual data on each cell
 data = VN.numpy_to_vtk(s.filled().flat,deep=True)
-if not contour:
+if contour:
   ug.GetPointData().SetScalars(data)
   #polydata need cells too, even if they are all VTK_VERTEX (1 cell : 1 vertex) you need them to do much with it
 else:
@@ -147,7 +145,7 @@ mapper.SetScalarRange(0,1600)
 act = vtk.vtkActor()
 act.SetMapper(mapper)
 
-wrap = False
+wrap = True
 def doWrap(Mapper,Act):
   act_left = vtk.vtkActor()
   act_left.SetMapper(Mapper)
@@ -200,7 +198,7 @@ clr.SetHeight(.1)
 ren.AddActor(clr)
 
 ## Trying the glyph thing to see the points
-glyph = True
+glyph = False
 if glyph:
   S=vtk.vtkSphereSource()
   if proj:

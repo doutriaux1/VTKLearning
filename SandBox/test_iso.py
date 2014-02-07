@@ -24,10 +24,10 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-#f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
-#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
-f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
-s=f("sample")#[:-5,5:-5]
+f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
+s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
+#f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
+#s=f("sample")#[:-5,5:-5]
 
 
 #Get mesh information for vtk grid
@@ -78,6 +78,10 @@ c2p.SetInputData(ug)
 c2p.Update()
 
 
+dsw = vtk.vtkDataSetWriter()
+dsw.SetFileName("foo2.vtk")
+dsw.SetInputConnection(c2p.GetOutputPort())
+dsw.Write()
 cot = vtk.vtkContourFilter()
 #c2p.Update()
 #cot.SetInputData(c2p.GetOutput())
