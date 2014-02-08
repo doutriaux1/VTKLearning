@@ -78,23 +78,38 @@ c2p = vtk.vtkCellDataToPointData()
 c2p.SetInputData(ug)
 c2p.Update()
 
+dsw = vtk.vtkDataSetWriter()
+dsw.SetFileName("foo2.vtk")
+dsw.SetInputConnection(c2p.GetOutputPort())
+dsw.Write()
 #For contouring duplicate points seem to confuse it
 cln = vtk.vtkCleanUnstructuredGrid()
 cln.SetInputConnection(c2p.GetOutputPort())
 
 dsw = vtk.vtkDataSetWriter()
-dsw.SetFileName("foo2.vtk")
-dsw.SetInputConnection(c2p.GetOutputPort())
+dsw.SetFileName("foo3.vtk")
+dsw.SetInputConnection(cln.GetOutputPort())
 dsw.Write()
-cot = vtk.vtkContourFilter()
-#c2p.Update()
-#cot.SetInputData(c2p.GetOutput())
-#or better still
-cot.SetInputConnection(cln.GetOutputPort())
+
+pts = cln.GetOutput().GetPoints()
+d = cln.GetOutput().GetPointData().GetScalars()
+P=vtk.vtkPolyData()
+P.SetPoints(pts)
+P.GetPointData().SetScalars(d)
+
+dsw = vtk.vtkDataSetWriter()
+dsw.SetFileName("foo4.vtk")
+dsw.SetInputData(P)
+dsw.Write()
+
+cot = vtk.vtkBandedPolyDataContourFilter()
+cot.SetInputData(P)
 mn,mx = s.min(),s.max()
 cot.GenerateValues(10,mn,mx)
+cot.SetScalarModeToValue()
+cot.Update()
 # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
-cot.SetComputeScalars(1)
+#cot.SetComputeScalars(1)
 #cot.ComputeScalarsOn()
 
 #Ok now we have grid and data let's use the mapper
