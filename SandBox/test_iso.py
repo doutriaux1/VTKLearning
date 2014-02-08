@@ -24,10 +24,12 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-#f=cdms2.open("clt.nc")
-#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
-f=cdms2.open("sampleCurveGrid4.nc")
-s=f("sample")#[:-5,5:-5]
+if 1:
+ f=cdms2.open("clt.nc")
+ s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
+else:
+ f=cdms2.open("sampleCurveGrid4.nc")
+ s=f("sample")#[:-5,5:-5]
 
 
 #Get mesh information for vtk grid
@@ -91,22 +93,21 @@ dsw.SetFileName("foo3.vtk")
 dsw.SetInputConnection(cln.GetOutputPort())
 dsw.Write()
 
-pts = cln.GetOutput().GetPoints()
-d = cln.GetOutput().GetPointData().GetScalars()
-P=vtk.vtkPolyData()
-P.SetPoints(pts)
-P.GetPointData().SetScalars(d)
+sFilter = vtk.vtkDataSetSurfaceFilter()
+sFilter.SetInputConnection(cln.GetOutputPort())
+sFilter.Update()
+
 
 dsw = vtk.vtkDataSetWriter()
 dsw.SetFileName("foo4.vtk")
-dsw.SetInputData(P)
+dsw.SetInputConnection(sFilter.GetOutputPort())
 dsw.Write()
 
 cot = vtk.vtkBandedPolyDataContourFilter()
-cot.SetInputData(P)
+cot.SetInputData(sFilter.GetOutput())
 mn,mx = s.min(),s.max()
 cot.GenerateValues(10,mn,mx)
-cot.SetScalarModeToValue()
+#cot.SetScalarModeToValue()
 cot.Update()
 # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
 #cot.SetComputeScalars(1)
@@ -117,7 +118,7 @@ mapper = vtk.vtkDataSetMapper()
 mapper.SetInputConnection(cot.GetOutputPort())
 # Color range
 mapper.SetScalarRange(mn,mx)
-
+mapper.SetScalarModeToUsePointData()
 
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
