@@ -134,7 +134,7 @@ mapper = vtk.vtkDataSetMapper()
 mapper.SetInputConnection(cot.GetOutputPort())
 # Color range
 mapper.SetScalarRange(mn,mx)
-mapper.SetScalarModeToUsePointData()
+mapper.SetScalarModeToUseCellData()
 
 
 
