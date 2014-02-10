@@ -1,5 +1,6 @@
 import readline
 import rlcompleter
+import vcs
 readline.parse_and_bind("tab: complete")
 
 import sys
@@ -106,7 +107,22 @@ dsw.Write()
 cot = vtk.vtkBandedPolyDataContourFilter()
 cot.SetInputData(sFilter.GetOutput())
 mn,mx = s.min(),s.max()
-cot.GenerateValues(10,mn,mx)
+Nlevs = 10
+#cot.GenerateValues(Nlevs+1,mn,mx)
+cot.SetNumberOfContours(Nlevs+1)
+
+#At that point let's try to tweak color table
+lut = vtk.vtkLookupTable()
+lut.SetTableRange(0,Nlevs)
+levs=vcs.mkevenlevels(mn,mx,Nlevs)
+cols=vcs.getcolors(levs)
+cmap=vcs.colormap.Cp("default","defaultvcs")
+
+for i in range(Nlevs):
+  cot.SetValue(i,levs[i])
+  r,g,b = cmap.index[cols[i]]
+  lut.SetTableValue(i,r/100.,g/100.,b/100.,1.)
+
 #cot.SetScalarModeToValue()
 cot.Update()
 # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
@@ -119,6 +135,10 @@ mapper.SetInputConnection(cot.GetOutputPort())
 # Color range
 mapper.SetScalarRange(mn,mx)
 mapper.SetScalarModeToUsePointData()
+
+
+
+mapper.SetLookupTable(lut)
 
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
@@ -141,5 +161,19 @@ ren.AddActor(clr)
 # Render the scene and start interaction.
 iren.Initialize()
 renWin.Render()
-iren.Start()
+#iren.Start()
+
+#Dump png
+dump=True
+if dump:
+  # Dumps to png
+  imgfiltr = vtk.vtkWindowToImageFilter()
+  imgfiltr.SetInput(renWin)
+  imgfiltr.SetMagnification(3)
+  imgfiltr.SetInputBufferTypeToRGBA()
+  imgfiltr.Update()
+  writer = vtk.vtkPNGWriter()
+  writer.SetInputConnection(imgfiltr.GetOutputPort())
+  writer.SetFileName("sample.png")
+  writer.Write()
 
