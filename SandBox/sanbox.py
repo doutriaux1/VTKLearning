@@ -145,7 +145,7 @@ mapper.SetScalarRange(0,1600)
 act = vtk.vtkActor()
 act.SetMapper(mapper)
 
-wrap = True
+wrap = False
 def doWrap(Mapper,Act):
   act_left = vtk.vtkActor()
   act_left.SetMapper(Mapper)
