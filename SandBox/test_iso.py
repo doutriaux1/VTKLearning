@@ -114,6 +114,7 @@ cot.SetNumberOfContours(Nlevs+1)
 #At that point let's try to tweak color table
 lut = vtk.vtkLookupTable()
 lut.SetNumberOfColors(Nlevs)
+lut.SetNumberOfTableValues(Nlevs)
 #lut.SetTableRange(0,Nlevs)
 levs=vcs.mkevenlevels(mn,mx,Nlevs)
 cols=vcs.getcolors(levs)
@@ -122,7 +123,9 @@ cmap=vcs.colormap.Cp("default","defaultvcs")
 for i in range(Nlevs):
   cot.SetValue(i,levs[i])
   r,g,b = cmap.index[cols[i]]
-  lut.SetTableValue(i,r/100.,g/100.,b/100.,1.)
+  lut.SetTableValue(i,r/100.,g/100.,b/100.)
+  print i,levs[i],r,g,b
+cot.SetValue(Nlevs,levs[-1])
 
 #cot.SetScalarModeToValue()
 cot.Update()
@@ -165,7 +168,7 @@ renWin.Render()
 #iren.Start()
 
 #Dump png
-dump=False
+dump=True
 if dump:
   # Dumps to png
   imgfiltr = vtk.vtkWindowToImageFilter()
@@ -177,5 +180,5 @@ if dump:
   writer.SetInputConnection(imgfiltr.GetOutputPort())
   writer.SetFileName("sample.png")
   writer.Write()
-else:
-  iren.Start()
+  renWin.Render()
+iren.Start()

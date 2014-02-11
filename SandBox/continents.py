@@ -92,7 +92,7 @@ def continentsVCS2VTK(fnm):
         ln=f.readline()
         while len(ln)>2:
           l,L=float(ln[:8]),float(ln[8:16])
-          pts.InsertNextPoint(L,l,0)
+          pts.InsertNextPoint(L,l,0.0001)
           ln=ln[16:]
           n+=2
     ln = vtk.vtkPolyLine()
@@ -115,6 +115,8 @@ contMapper = vtk.vtkPolyDataMapper()
 contMapper.SetInputData(contData)
 contActor = vtk.vtkActor()
 contActor.SetMapper(contMapper)
+contActor.GetProperty().SetColor(0.,0.,0.)
+
 ren.AddActor(contActor)
 
 # And now we need actors to actually render this thing

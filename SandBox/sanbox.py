@@ -1,6 +1,8 @@
 import readline
 import rlcompleter
+import os
 readline.parse_and_bind("tab: complete")
+import vcs2vtk
 
 import sys
 #sys.path.insert(0,"/git/HyperwallDataBrowse/HCI_Browser")
@@ -29,6 +31,14 @@ import cdms2
 f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
 s=f("sample")#[:-5,5:-5]
 
+
+#Continents
+contData = vcs2vtk.continentsVCS2VTK(os.environ["HOME"]+"/.uvcdat/data_continent_political")
+contMapper = vtk.vtkPolyDataMapper()
+contMapper.SetInputData(contData)
+contActor = vtk.vtkActor()
+contActor.SetMapper(contMapper)
+contActor.GetProperty().SetColor(0.,0.,0.)
 
 contour = False
 if contour:
@@ -72,18 +82,14 @@ else:
 ## Ok here we try to apply the geotransform
 ## And set points onto ug
 proj = False
+proj = True
 if proj:
-  geo = vtk.vtkGeoTransform()
-  ps = vtk.vtkGeoProjection()
-  pd = vtk.vtkGeoProjection()
-  pd.SetName('wintri')
-  pd.SetCentralMeridian(180)
-  geo.SetSourceProjection(ps)
-  geo.SetDestinationProjection(pd)
-  geopts = vtk.vtkPoints()
-  geo.TransformPoints(pts,geopts)
+  geopts = vcs2vtk.project(pts)
   ## Sets the vertics into the grid
   ug.SetPoints(geopts)
+  cpts = contData.GetPoints()
+  gcpts = vcs2vtk.project(cpts)
+  contData.SetPoints(gcpts)
 else:
   ## Sets the vertics into the grid
   ug.SetPoints(pts)
@@ -215,14 +221,15 @@ if glyph:
   gact.SetMapper(gmap)
   ren.AddActor(gact)
 
+#continetns last to be on top?
+ren.AddActor(contActor)
 # Render the scene and start interaction.
 iren.Initialize()
 renWin.Render()
-iren.Start()
 
 
 # The following saves plo to disk
-dump = False
+dump = True
 if dump:
   # Dump to ps/pdf/svg
   gl  = vtk.vtkGL2PSExporter()
@@ -246,4 +253,6 @@ if dump:
   writer.SetInputConnection(imgfiltr.GetOutputPort())
   writer.SetFileName("sample.png")
   writer.Write()
+  renWin.Render()
 
+iren.Start()
