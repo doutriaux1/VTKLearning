@@ -3,8 +3,6 @@ import vtk
 
 ## This module contains some convenience function from vcs2vtk
 
-
-
 ## Continents first
 def continentsVCS2VTK(fnm):
   """ This converts vcs continents files to vtkpolydata
@@ -52,3 +50,42 @@ def project(pts,projName='wintri',meridian=None):
   geopts = vtk.vtkPoints()
   geo.TransformPoints(pts,geopts)
   return geopts
+
+
+#Vtk dump
+dumps=0
+def dump2VTK(obj,fnm=None):
+  global dumps
+  if fnm is None:
+    fnm="foo%.3i.vtk" % dumps
+    dumps+=1
+  dsw = vtk.vtkDataSetWriter()
+  dsw.SetFileName(fnm)
+  try:
+    dsw.SetInputData(obj)
+  except:
+    dsw.SetInputConnection(obj.GetOutputPort())
+
+  dsw.Write()
+
+
+#Wrapping around
+def doWrap(Mapper,Act):
+  act_left = vtk.vtkActor()
+  act_left.SetMapper(Mapper)
+  act_left.SetProperty(Act.GetProperty())
+  T = vtk.vtkTransform()
+  T.Translate(-360,0,0)
+  act_left.SetUserTransform(T)
+  act_right = vtk.vtkActor()
+  act_right.SetMapper(Mapper)
+  T = vtk.vtkTransform()
+  T.Translate(360,0,0)
+  act_right.SetUserTransform(T)
+  act_right.SetProperty(Act.GetProperty())
+  A = vtk.vtkAssembly()
+  A.AddPart(act_left)
+  A.AddPart(Act)
+  A.AddPart(act_right)
+  return A
+

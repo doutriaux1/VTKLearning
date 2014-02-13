@@ -25,7 +25,7 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-if 1:
+if 0:
  f=cdms2.open("clt.nc")
  s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
 else:
@@ -39,7 +39,6 @@ m=s.getGrid().getMesh()
 m2 = numpy.ascontiguousarray(numpy.transpose(m,(0,2,1)))
 m2.resize((m2.shape[0]*m2.shape[1],m2.shape[2]))
 m2=m2[...,::-1]
-m2b = m2[...,0]+360.
 # We need a "level" adding 0 everywhere
 # ??? TODO ??? Use actual levels if present (or time? or whatever 3rd dim?)
 m3=numpy.concatenate((m2,numpy.zeros((m2.shape[0],1))),axis=1)
@@ -119,7 +118,7 @@ lut.SetNumberOfTableValues(Nlevs)
 #lut.SetTableRange(0,Nlevs)
 levs=vcs.mkevenlevels(mn,mx,Nlevs)
 cols=vcs.getcolors(levs)
-cmap=vcs.colormap.Cp("default","defaultvcs")
+cmap=vcs.colormap.Cp("rainbow","defaultvcs")
 
 for i in range(Nlevs):
   cot.SetValue(i,levs[i])
@@ -143,12 +142,12 @@ mapper.SetScalarRange(mn,mx)
 
 
 
-#mapper.SetLookupTable(lut)
+mapper.SetLookupTable(lut)
 
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
 act.SetMapper(mapper)
-act.GetProperty().SetRepresentationToWireframe()
+#act.GetProperty().SetRepresentationToWireframe()
 ren.AddActor(act)
 
 #Now let's have colorbar

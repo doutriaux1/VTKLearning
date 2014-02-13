@@ -3,7 +3,7 @@ import rlcompleter
 import os
 readline.parse_and_bind("tab: complete")
 import vcs2vtk
-
+import vcs
 import sys
 #sys.path.insert(0,"/git/HyperwallDataBrowse/HCI_Browser")
 #import NcImageDataReader as NcR
@@ -26,22 +26,42 @@ ren.SetBackground(1, 1, 1)
 #Get the data
 import numpy
 import cdms2
-#f=cdms2.open(sys.prefix+"/sample_data/clt.nc")
-#s=f("clt",squeeze=1,time=slice(0,1))#,slice(20,22),slice(20,22),squeeze=1)
-f=cdms2.open(sys.prefix+"/sample_data/sampleCurveGrid4.nc")
-s=f("sample")#[:-5,5:-5]
+import argparse
+
+p = argparse.ArgumentParser()
+p.add_argument("-c","--contour",action="store_true",default=False,help="contour plot?")
+p.add_argument("-F","--filled_contours",action="store_true",default=False,help="Filled Contours")
+p.add_argument("-C","--continents",action="store_false",default=True,help="draw continents")
+p.add_argument("-p","--project",default="no",help="Project data")
+p.add_argument("-o","--output",default='sample',help="output file(s) name")
+p.add_argument("-t","--output_type",default=["png",],nargs="+",help="file types to dump to",choices=["all","no","png","pdf","ps","svg"])
+p.add_argument("-f","--file",default=sys.prefix+"/sample_data/sampleCurveGrid4.nc",help="Input data file name")
+p.add_argument("-v","--var",default="sample",help="variable name in file")
+p.add_argument("-d","--debug",action="store_true",default=False,help="Dumps vtk files for debugging")
+p.add_argument("-w","--wrap",action="store_true",default=False,help="wrap the data around")
+p.add_argument("-m","--mesh",action="store_true",default=False,help="show mesh")
+p.add_argument("-g","--glyph",action="store_true",default=False,help="show glyph on vertices")
+
+p=p.parse_args(sys.argv[1:])
+
+if "all" in p.output_type:
+  p.output_type = ["png","pdf","ps","svg"]
+f=cdms2.open(p.file)
+s=f(p.var)
+
+if p.continents:
+  #Continents
+  contData = vcs2vtk.continentsVCS2VTK(os.environ["HOME"]+"/.uvcdat/data_continent_political")
+  contMapper = vtk.vtkPolyDataMapper()
+  contMapper.SetInputData(contData)
+  contActor = vtk.vtkActor()
+  contActor.SetMapper(contMapper)
+  contActor.GetProperty().SetColor(0.,0.,0.)
+  if p.wrap:
+    A0 = vcs2vtk.doWrap(contMapper,contActor)
 
 
-#Continents
-contData = vcs2vtk.continentsVCS2VTK(os.environ["HOME"]+"/.uvcdat/data_continent_political")
-contMapper = vtk.vtkPolyDataMapper()
-contMapper.SetInputData(contData)
-contActor = vtk.vtkActor()
-contActor.SetMapper(contMapper)
-contActor.GetProperty().SetColor(0.,0.,0.)
-
-contour = False
-if contour:
+if 0:
   lat = s.getGrid().getLatitude()
   lon = s.getGrid().getLongitude()
   if lat.rank()==1: # rectilinear
@@ -74,22 +94,21 @@ pts.SetData(ppV)
 
 # Create the VTK grid
 # ??? TODO ??? Use StructuredGrid or RectlinearGrid when appropriate
-if contour:
+if 0:
   ug = vtk.vtkPolyData()
 else:
   ug = vtk.vtkUnstructuredGrid()
 
 ## Ok here we try to apply the geotransform
 ## And set points onto ug
-proj = False
-proj = True
-if proj:
-  geopts = vcs2vtk.project(pts)
+if p.project!="no":
+  geopts = vcs2vtk.project(pts,p.project)
   ## Sets the vertics into the grid
   ug.SetPoints(geopts)
-  cpts = contData.GetPoints()
-  gcpts = vcs2vtk.project(cpts)
-  contData.SetPoints(gcpts)
+  if p.continents:
+    cpts = contData.GetPoints()
+    gcpts = vcs2vtk.project(cpts)
+    contData.SetPoints(gcpts)
 else:
   ## Sets the vertics into the grid
   ug.SetPoints(pts)
@@ -97,7 +116,7 @@ else:
 
 #Now applies the actual data on each cell
 data = VN.numpy_to_vtk(s.filled().flat,deep=True)
-if contour:
+if 0:
   ug.GetPointData().SetScalars(data)
   #polydata need cells too, even if they are all VTK_VERTEX (1 cell : 1 vertex) you need them to do much with it
 else:
@@ -111,68 +130,77 @@ else:
 
   ug.GetCellData().SetScalars(data)
 
-dsw = vtk.vtkDataSetWriter()
-dsw.SetFileName("foo.vtk")
-dsw.SetInputData(ug)
-dsw.Write()
-#send me this, and open it up and and inspect in paraview
-
-# Here we try to do a little bit of contouring
-#not without values on the points you don't!
-c2p = vtk.vtkCellDataToPointData()
-c2p.SetInputData(ug)
-c2p.Update()
+if p.debug:
+  vcs2vtk.dump2VTK(ug)
 
 
-## ??? STILL NOT WORKING 
-if contour: 
-  cot = vtk.vtkContourFilter()
-  #c2p.Update()
-  #cot.SetInputData(c2p.GetOutput())
-  #or better still
-  cot.SetInputConnection(c2p.GetOutputPort())
-  cot.GenerateValues(10,0.,1600.)
-  # the next two are the same thing, see setter/getter macro definitions in vtkSetGet.h
-  cot.SetComputeScalars(1)
-  #cot.ComputeScalarsOn()
+#Data range
+mn,mx = s.min(),s.max()
 
 #Ok now we have grid and data let's use the mapper
 mapper = vtk.vtkDataSetMapper()
-if contour:
-  mapper.SetInputConnection(cot.GetOutputPort())
-else:
-  print "ok we do come here"
-  mapper.SetInputData(ug)
-# Color range
-mapper.SetScalarRange(0,1600)
 
+if p.contour: 
+  # Sets data to point instead of just cells
+  c2p = vtk.vtkCellDataToPointData()
+  c2p.SetInputData(ug)
+  c2p.Update()
+  if p.debug:
+    vcs2vtk.dump2VTK(c2p)
+  #For contouring duplicate points seem to confuse it
+  cln = vtk.vtkCleanUnstructuredGrid()
+  cln.SetInputConnection(c2p.GetOutputPort())
+  if p.debug:
+    vcs2vtk.dump2VTK(cln)
+  #Now this filter seens to create the good polydata
+  sFilter = vtk.vtkDataSetSurfaceFilter()
+  sFilter.SetInputConnection(cln.GetOutputPort())
+  sFilter.Update()
+  if p.debug:
+    vcs2vtk.dump2VTK(sFilter)
+  if p.filled_contours:
+    cot = vtk.vtkBandedPolyDataContourFilter()
+  else:
+    cot = vtk.vtkContourFilter()
+  cot.SetInputData(sFilter.GetOutput())
+  if p.debug:
+    vcs2vtk.dump2VTK(cot)
+
+  # Here we generate the levels and the colormap to go with it
+  Nlevs = 10
+  cot.SetNumberOfContours(Nlevs+1)
+  #At that point let's try to tweak color table
+  lut = vtk.vtkLookupTable()
+  lut.SetNumberOfTableValues(Nlevs)
+  #lut.SetTableRange(0,Nlevs)
+  levs=vcs.mkevenlevels(mn,mx,Nlevs)
+  cols=vcs.getcolors(levs)
+  cmap=vcs.colormap.Cp("rainbow","defaultvcs")
+
+  for i in range(Nlevs):
+    cot.SetValue(i,levs[i])
+    r,g,b = cmap.index[cols[i]]
+    print i,cols[i],r,g,b
+    lut.SetTableValue(i,r/100.,g/100.,b/100.)
+  cot.SetValue(Nlevs,levs[-1])
+
+  cot.Update()
+
+  mapper.SetInputConnection(cot.GetOutputPort())
+  mapper.SetLookupTable(lut)
+else:
+  mapper.SetInputData(ug)
+
+mapper.SetScalarRange(mn,mx)
+if p.debug:
+  vcs2vtk.dump2VTK(cot,"cot")
 
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
 act.SetMapper(mapper)
 
-wrap = False
-def doWrap(Mapper,Act):
-  act_left = vtk.vtkActor()
-  act_left.SetMapper(Mapper)
-  act_left.SetProperty(Act.GetProperty())
-  T = vtk.vtkTransform()
-  T.Translate(-360,0,0)
-  act_left.SetUserTransform(T)
-  act_right = vtk.vtkActor()
-  act_right.SetMapper(Mapper)
-  T = vtk.vtkTransform()
-  T.Translate(360,0,0)
-  act_right.SetUserTransform(T)
-  act_right.SetProperty(Act.GetProperty())
-  A = vtk.vtkAssembly()
-  A.AddPart(act_left)
-  A.AddPart(Act)
-  A.AddPart(act_right)
-  return A
-
-if wrap:
-  A = doWrap(mapper,act)
+if p.wrap:
+  A = vcs2vtk.doWrap(mapper,act)
   ren.AddActor(A)
 else:
   ren.AddActor(act)
@@ -185,8 +213,8 @@ if mesh:
   act2 = vtk.vtkActor()
   act2.SetMapper(mapper2)
   act2.GetProperty().SetRepresentationToWireframe()
-  if wrap:
-    A2 = doWrap(mapper2,act2)
+  if p.wrap:
+    A2 = vcs2vtk.doWrap(mapper2,act2)
     ren.AddActor(A2)
   else:
     ren.AddActor(act2)
@@ -207,7 +235,7 @@ ren.AddActor(clr)
 glyph = False
 if glyph:
   S=vtk.vtkSphereSource()
-  if proj:
+  if p.project:
     sc = max(geopts.GetBounds())/90.
     S.SetRadius(sc)
   else:
@@ -219,40 +247,51 @@ if glyph:
   gmap.SetInputConnection(g.GetOutputPort())
   gact = vtk.vtkActor()
   gact.SetMapper(gmap)
-  ren.AddActor(gact)
-
+  if p.wrap:
+    A3 = vcs2vtk.doWrap(gmap,gact)
+    ren.AddActor(A3)
+  else:
+    ren.AddActor(gact)
 #continetns last to be on top?
-ren.AddActor(contActor)
+if p.continents:
+  if p.wrap:
+    ren.AddActor(A0)
+  else:
+    ren.AddActor(contActor)
 # Render the scene and start interaction.
 iren.Initialize()
 renWin.Render()
 
 
 # The following saves plo to disk
-dump = True
-if dump:
+if not "no" in p.output_type:
   # Dump to ps/pdf/svg
   gl  = vtk.vtkGL2PSExporter()
   gl.SetInput(renWin)
   gl.SetCompress(0) # Do not compress
-  gl.SetFilePrefix("sample")
-  gl.SetFileFormatToSVG()
-  gl.Write()
-  gl.SetFileFormatToPS()
-  gl.Write()
-  gl.SetFileFormatToPDF()
-  gl.Write()
+  gl.SetFilePrefix(p.output)
+  if "svg" in p.output_type:
+    gl.SetFileFormatToSVG()
+    gl.Write()
+  if "ps" in p.output_type:
+    gl.SetFileFormatToPS()
+    gl.Write()
+  if "pdf" in p.output_type:
+    gl.SetFileFormatToPDF()
+    gl.Write()
 
   # Dumps to png
-  imgfiltr = vtk.vtkWindowToImageFilter()
-  imgfiltr.SetInput(renWin)
-  imgfiltr.SetMagnification(3)
-  imgfiltr.SetInputBufferTypeToRGBA()
-  imgfiltr.Update()
-  writer = vtk.vtkPNGWriter()
-  writer.SetInputConnection(imgfiltr.GetOutputPort())
-  writer.SetFileName("sample.png")
-  writer.Write()
+  if "png" in p.output_type:
+    os.remove(p.output+".png")
+    imgfiltr = vtk.vtkWindowToImageFilter()
+    imgfiltr.SetInput(renWin)
+    imgfiltr.SetMagnification(3)
+    imgfiltr.SetInputBufferTypeToRGBA()
+    imgfiltr.Update()
+    writer = vtk.vtkPNGWriter()
+    writer.SetInputConnection(imgfiltr.GetOutputPort())
+    writer.SetFileName(p.output+".png")
+    writer.Write()
   renWin.Render()
 
 iren.Start()
