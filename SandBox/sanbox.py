@@ -10,6 +10,36 @@ import sys
 import vtk
 from vtk.util import numpy_support as VN
 
+
+#Get the data
+import numpy
+import cdms2
+import argparse
+
+p = argparse.ArgumentParser()
+p.add_argument("-d","--debug",action="store_true",default=False,help="Dumps vtk files for debugging")
+
+pd = p.add_argument_group("data")
+pd.add_argument("-f","--file",default=sys.prefix+"/sample_data/sampleCurveGrid4.nc",help="Input data file name")
+pd.add_argument("-v","--var",default="sample",help="variable name in file")
+pd.add_argument("-o","--output",default='sample',help="output file(s) name")
+pd.add_argument("-t","--output_type",default=["png",],nargs="+",help="file types to dump to",choices=["all","no","png","pdf","ps","svg"])
+
+pV = p.add_argument_group("VTK Representation")
+pV.add_argument("-c","--contour",action="store_true",default=False,help="contour plot?")
+pV.add_argument("-F","--filled_contours",action="store_true",default=False,help="Filled Contours")
+pV.add_argument("-C","--continents",action="store_false",default=True,help="draw continents")
+pV.add_argument("-w","--wrap",action="store_true",default=False,help="wrap the data around")
+pV.add_argument("-m","--mesh",action="store_true",default=False,help="show mesh")
+pV.add_argument("-G","--glyph",action="store_true",default=False,help="show glyph on vertices")
+
+pv = p.add_argument_group("VCS Emulation")
+pv.add_argument("-p","--project",default="no",help="Project data")
+pv.add_argument("-T","--template",default="default",help="vcs template to use")
+pv.add_argument("-g","--graphic_method",metavar="gm",help="graphic method type")
+pv.add_argument("-n","--name",help="graphic method name")
+pv.add_argument("-b","--bg",default=False,action="store_true",help="Plot in background")
+
 # Create the usual rendering stuff.
 renWin = vtk.vtkRenderWindow()
 renWin.SetSize(600, 600)
@@ -23,26 +53,19 @@ iren.SetRenderWindow(renWin)
 ren.SetBackground(1, 1, 1) 
 
 
-#Get the data
-import numpy
-import cdms2
-import argparse
-
-p = argparse.ArgumentParser()
-p.add_argument("-c","--contour",action="store_true",default=False,help="contour plot?")
-p.add_argument("-F","--filled_contours",action="store_true",default=False,help="Filled Contours")
-p.add_argument("-C","--continents",action="store_false",default=True,help="draw continents")
-p.add_argument("-p","--project",default="no",help="Project data")
-p.add_argument("-o","--output",default='sample',help="output file(s) name")
-p.add_argument("-t","--output_type",default=["png",],nargs="+",help="file types to dump to",choices=["all","no","png","pdf","ps","svg"])
-p.add_argument("-f","--file",default=sys.prefix+"/sample_data/sampleCurveGrid4.nc",help="Input data file name")
-p.add_argument("-v","--var",default="sample",help="variable name in file")
-p.add_argument("-d","--debug",action="store_true",default=False,help="Dumps vtk files for debugging")
-p.add_argument("-w","--wrap",action="store_true",default=False,help="wrap the data around")
-p.add_argument("-m","--mesh",action="store_true",default=False,help="show mesh")
-p.add_argument("-g","--glyph",action="store_true",default=False,help="show glyph on vertices")
-
 p=p.parse_args(sys.argv[1:])
+
+# Create the usual rendering stuff.
+renWin = vtk.vtkRenderWindow()
+renWin.SetSize(600, 600)
+#Renderer
+ren = vtk.vtkRenderer()
+renWin.AddRenderer(ren)
+
+#Interactor
+iren = vtk.vtkRenderWindowInteractor()
+iren.SetRenderWindow(renWin)
+ren.SetBackground(1, 1, 1) 
 
 if "all" in p.output_type:
   p.output_type = ["png","pdf","ps","svg"]
@@ -175,7 +198,8 @@ if p.contour:
   #lut.SetTableRange(0,Nlevs)
   levs=vcs.mkevenlevels(mn,mx,Nlevs)
   cols=vcs.getcolors(levs)
-  cmap=vcs.colormap.Cp("rainbow","defaultvcs")
+  x=vcs.init()
+  cmap=x.getcolormap("rainbow")
 
   for i in range(Nlevs):
     cot.SetValue(i,levs[i])
@@ -282,7 +306,10 @@ if not "no" in p.output_type:
 
   # Dumps to png
   if "png" in p.output_type:
-    os.remove(p.output+".png")
+    try:
+      os.remove(p.output+".png")
+    except:
+      pass
     imgfiltr = vtk.vtkWindowToImageFilter()
     imgfiltr.SetInput(renWin)
     imgfiltr.SetMagnification(3)
