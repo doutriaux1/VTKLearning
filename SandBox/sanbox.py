@@ -223,6 +223,12 @@ if p.debug:
 act = vtk.vtkActor()
 act.SetMapper(mapper)
 
+# Trying to do some positioning here
+x=vcs.init()
+tmpl=x.gettemplate(p.template)
+
+ren.SetViewport(tmpl.data.x1,tmpl.data.y1,tmpl.data.x2,tmpl.data.y2)
+
 if p.wrap:
   A = vcs2vtk.doWrap(mapper,act)
   ren.AddActor(A)
@@ -253,7 +259,7 @@ clr.GetPositionCoordinate().SetValue(.1,.01)
 clr.SetOrientationToHorizontal()
 clr.SetWidth(.8)
 clr.SetHeight(.1)
-ren.AddActor(clr)
+#ren.AddActor(clr)
 
 ## Trying the glyph thing to see the points
 glyph = False
