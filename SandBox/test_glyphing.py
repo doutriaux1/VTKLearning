@@ -2,7 +2,7 @@
 
 import vtk
 import numpy
-from vcs.vcs2vtk import genPoly
+from vcs.vcs2vtk import genPoly,dump2VTK
 
 # Tests on hurrican glyph
 
@@ -33,17 +33,17 @@ t="hurricane"
 s =0.1
 
 ds = vtk.vtkDiskSource()
-ds.SetInnerRadius(.58*s)
-ds.SetOuterRadius(s)
+ds.SetInnerRadius(.55*s)
+ds.SetOuterRadius(1.01*s)
+ds.SetCircumferentialResolution(90)
+ds.SetRadialResolution(30)
 gf = vtk.vtkGeometryFilter()
 gf.SetInputConnection(ds.GetOutputPort())
 gf.Update()
 pd1 = gf.GetOutput()
-print pd1
-raw_input()
-sys.exit()
+#dump2VTK(pd1,"polytest")
 apd = vtk.vtkAppendPolyData()
-apd.AddInputData(gf.GetOutput())
+apd.AddInputData(pd1)
 
 pts = vtk.vtkPoints()
 pd = vtk.vtkPolyData()
