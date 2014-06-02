@@ -9,6 +9,7 @@
 import vtk
 from vtk.util.misc import vtkGetDataRoot
 VTK_DATA_ROOT = vtkGetDataRoot()
+VTK_DATA_ROOT= "/git/VTKData"
 
 # Create a PLOT3D reader and load the data.
 pl3d = vtk.vtkMultiBlockPLOT3DReader()
