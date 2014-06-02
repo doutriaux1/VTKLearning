@@ -6,14 +6,14 @@ def aMarker(i):
   for l in f.xreadlines():
     if l.strip() in ["line","poly"]: # new set of coords
       if coords is None:
-        coords = {"x":[],"y":[]}
+        coords =[[],[]]
       else:
         dic[type].append(coords)
       type = l.strip()
     else:
       sp=l.strip().split(",")
-      coords["x"].append(float(sp[0]))
-      coords["y"].append(float(sp[1]))
+      coords[0].append(float(sp[0]))
+      coords[1].append(float(sp[1]))
 
   try:
     dic[type].append(coords)
@@ -24,11 +24,12 @@ import json
 
 markers = {}
 for i in range(203):
-  nm = "w%.2i"
+  nm = "w%.2i" % i
   m = aMarker(i)
   if m is not None:
     markers[nm]=m
 
-f = open("markers.json","w")
-json.dump(f,markers,sort_keys=True)
+f = open("wmo_symbols.json","w")
+print markers["w01"]["line"][0]
+json.dump(markers,f,sort_keys=True)
 f.close()
