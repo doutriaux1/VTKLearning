@@ -55,13 +55,6 @@ ren.SetBackground(1, 1, 1)
 
 p=p.parse_args(sys.argv[1:])
 
-# Create the usual rendering stuff.
-renWin = vtk.vtkRenderWindow()
-renWin.SetSize(600, 600)
-#Renderer
-ren = vtk.vtkRenderer()
-renWin.AddRenderer(ren)
-
 #Interactor
 iren = vtk.vtkRenderWindowInteractor()
 iren.SetRenderWindow(renWin)
