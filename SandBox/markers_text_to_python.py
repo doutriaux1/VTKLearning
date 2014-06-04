@@ -5,10 +5,9 @@ def aMarker(i):
   dic={"line":[],"poly":[]}
   for l in f.xreadlines():
     if l.strip() in ["line","poly"]: # new set of coords
-      if coords is None:
-        coords =[[],[]]
-      else:
+      if coords is not None:
         dic[type].append(coords)
+      coords =[[],[]]
       type = l.strip()
     else:
       sp=l.strip().split(",")
@@ -24,12 +23,15 @@ import json
 
 markers = {}
 for i in range(203):
-  nm = "w%.2i" % i
+  j=i
+  if j>199:
+    j-=100
+  nm = "w%.2i" % j
   m = aMarker(i)
   if m is not None:
+    print "NM:",nm
     markers[nm]=m
 
 f = open("wmo_symbols.json","w")
-print markers["w01"]["line"][0]
 json.dump(markers,f,sort_keys=True)
 f.close()
