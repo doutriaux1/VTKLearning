@@ -20,7 +20,8 @@ p = argparse.ArgumentParser()
 p.add_argument("-d","--debug",action="store_true",default=False,help="Dumps vtk files for debugging")
 
 pd = p.add_argument_group("data")
-pd.add_argument("-f","--file",default=sys.prefix+"/sample_data/sampleCurveGrid4.nc",help="Input data file name")
+#pd.add_argument("-f","--file",default=sys.prefix+"/sample_data/sampleCurveGrid4.nc",help="Input data file name")
+pd.add_argument("-f","--file",default=sys.prefix+"/sample_data/clt.nc",help="Input data file name")
 pd.add_argument("-v","--var",default="sample",help="variable name in file")
 pd.add_argument("-o","--output",default='sample',help="output file(s) name")
 pd.add_argument("-t","--output_type",default=["png",],nargs="+",help="file types to dump to",choices=["all","no","png","pdf","ps","svg"])
@@ -61,7 +62,28 @@ iren.SetRenderWindow(renWin)
 ren.SetBackground(1, 1, 1) 
 
 f=cdms2.open(p.file)
-s=f(p.var)
+s=data=f("u")
+u=numpy.ravel(numpy.ma.masked_greater(data[0],600).filled(0))
+v=numpy.ravel(numpy.ma.masked_greater(f("v")[0],600).filled(0))
+
+
+sh = list(u.shape)
+sh.append(1)
+u = numpy.reshape(u,sh)
+v = numpy.reshape(v,sh)
+
+w = numpy.concatenate((u,v),axis=1)
+print w[0]
+print w.shape
+print w[:20]
+print w.min()
+print w.max()
+w = VN.numpy_to_vtk(numpy.ravel(w),deep=True)
+w.SetName("vectors")
+
+
+#norm = numpy.sqrt(u**2+v**2)
+#angle = numpy.arctan2(u,v)
 
 if 1:
   #Get mesh information for vtk grid
@@ -88,11 +110,12 @@ ug = vtk.vtkUnstructuredGrid()
 ## Ok here we try to apply the geotransform
 ## And set points onto ug
 ug.SetPoints(pts)
+ug.GetPointData().AddArray(w)
 
 
 #Now applies the actual data on each cell
 data = VN.numpy_to_vtk(s[0].filled().flat,deep=True)
-print data.GetNumberOfScalarComponents()
+#print data.GetNumberOfScalarComponents()
 #Now construct the cells
 for i in range(m.shape[0]):
   lst = vtk.vtkIdList()
@@ -101,7 +124,7 @@ for i in range(m.shape[0]):
   ## ??? TODO ??? when 3D use CUBE?
   ug.InsertNextCell(vtk.VTK_QUAD,lst)
 
-ug.GetPointData().SetVectors(data)
+#ug.GetPointData().SetVectors(data)
 
 if p.debug:
   vcs2vtk.dump2VTK(ug)
@@ -112,7 +135,8 @@ arrow.Update()
 glyphFilter = vtk.vtkGlyph2D()
 glyphFilter.SetSourceConnection(arrow.GetOutputPort())
 glyphFilter.OrientOn()
-glyphFilter.SetVectorModeToUseVector()
+#glyphFilter.SetVectorModeToUseVector()
+glyphFilter.SetInputArrayToProcess(1,0,0,0,"vectors")
 glyphFilter.SetInputData(ug)
 
 
