@@ -71,8 +71,9 @@ sh = list(u.shape)
 sh.append(1)
 u = numpy.reshape(u,sh)
 v = numpy.reshape(v,sh)
-
+z = numpy.zeros(u.shape)
 w = numpy.concatenate((u,v),axis=1)
+w = numpy.concatenate((w,z),axis=1)
 print w[0]
 print w.shape
 print w[:20]
@@ -135,7 +136,7 @@ arrow.Update()
 glyphFilter = vtk.vtkGlyph2D()
 glyphFilter.SetSourceConnection(arrow.GetOutputPort())
 glyphFilter.OrientOn()
-#glyphFilter.SetVectorModeToUseVector()
+glyphFilter.SetVectorModeToUseVector()
 glyphFilter.SetInputArrayToProcess(1,0,0,0,"vectors")
 glyphFilter.SetInputData(ug)
 
