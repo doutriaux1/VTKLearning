@@ -79,7 +79,7 @@ print w.shape
 print w[:20]
 print w.min()
 print w.max()
-w = VN.numpy_to_vtk(numpy.ravel(w),deep=True)
+w = VN.numpy_to_vtk(w,deep=True)
 w.SetName("vectors")
 
 
