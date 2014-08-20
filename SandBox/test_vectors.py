@@ -138,6 +138,7 @@ glyphFilter.SetSourceConnection(arrow.GetOutputPort())
 glyphFilter.OrientOn()
 glyphFilter.SetVectorModeToUseVector()
 glyphFilter.SetInputArrayToProcess(1,0,0,0,"vectors")
+glyphFilter.SetScaleFactor(2)
 glyphFilter.SetInputData(ug)
 
 
@@ -155,6 +156,7 @@ if p.debug:
 # And now we need actors to actually render this thing
 act = vtk.vtkActor()
 act.SetMapper(mapper)
+act.GetProperty().SetColor(0,0,0)
 
 ren.AddActor(act)
 

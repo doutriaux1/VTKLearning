@@ -2,7 +2,6 @@ import vtk,cdms2,numpy
 
 from vtk.util import numpy_support as VN
 
-
 f=cdms2.open("celine.nc")
 data=f("data")
 ug = vtk.vtkStructuredGrid()
@@ -46,16 +45,19 @@ cot.ClippingOn()
 cot.SetInputData(sFilter.GetOutput())
 cot.SetNumberOfContours(len(l))
 for j,v in enumerate(l):
-  cot.SetValue(j,l[j])
+      cot.SetValue(j,l[j])
+#cot.SetScalarModeToIndex()
 cot.Update()
+
 mapper.SetInputConnection(cot.GetOutputPort())
 lut = vtk.vtkLookupTable()
 lut.SetNumberOfTableValues(len(cols))
 for j,color in enumerate(cols):
-  r,g,b = cols[j]
-  lut.SetTableValue(j,r/100.,g/100.,b/100.)
+    r,g,b = cols[j]
+    lut.SetTableValue(j,r/100.,g/100.,b/100.)
 mapper.SetLookupTable(lut)
-mapper.SetScalarRange(-4.05847764015,7.87596750259)
+mapper.SetScalarRange(0, len(l) - 1)
+mapper.SetScalarModeToUseCellData()
 
 act = vtk.vtkActor()
 act.SetMapper(mapper)
@@ -66,14 +68,5 @@ renWin=vtk.vtkRenderWindow()
 renWin.SetSize(800,600)
 renWin.AddRenderer(ren)
 renWin.Render()
-iren = vtk.vtkRenderWindowInteractor()
-iren.SetRenderWindow(renWin)
-ren.SetBackground(1, 1, 1)
-iren = vtk.vtkRenderWindowInteractor()
-iren.SetRenderWindow(renWin)
-iren.Start()
+
 raw_input("ok press enter now")
-
-
-
-
